@@ -153,19 +153,54 @@ bot.callbackQuery(/^complete_quest_(.+)$/, async (ctx) => {
 });
 
 // Handle guild callbacks
-bot.callbackQuery(/^guild_(.+)$/, async (ctx) => {
+bot.callbackQuery(/^guild_action_(.+)$/, async (ctx) => {
     const action = ctx.match[1];
     await handleGuildAction(ctx, action);
 });
 
-bot.callbackQuery(/^join_guild_(.+)$/, async (ctx) => {
-    const guildId = ctx.match[1];
-    await handleJoinGuild(ctx, guildId);
+bot.callbackQuery(/^guild_join_(.+)$/, async (ctx) => {
+    const guildName = ctx.match[1];
+    await handleJoinGuild(ctx, guildName);
 });
 
-bot.callbackQuery(/^leave_guild_(.+)$/, async (ctx) => {
-    const guildId = ctx.match[1];
-    await handleLeaveGuild(ctx, guildId);
+bot.callbackQuery(/^confirm_guild_leave$/, async (ctx) => {
+    await handleLeaveGuild(ctx);
+});
+
+bot.callbackQuery(/^confirm_guild_disband$/, async (ctx) => {
+    const player = ctx.player;
+    if (player.guildRank !== 'leader') {
+        return await ctx.answerCallbackQuery('❌ Only guild leader can disband guild.');
+    }
+    
+    const GuildService = require('../services/guildService');
+    const result = await GuildService.disbandGuild(player.guildId, player.userId);
+    
+    if (result.success) {
+        const message = 
+            `✅ **Guild Disbanded**\n\n` +
+            `The guild has been permanently disbanded.\n` +
+            `All members have been removed.`;
+        
+        const { InlineKeyboard } = require('grammy');
+        const keyboard = new InlineKeyboard()
+            .text('🔍 Browse Guilds', 'guild_action_browse')
+            .text('👤 Profile', 'quick_profile');
+        
+        await ctx.editMessageText(message, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+        });
+        
+        await ctx.answerCallbackQuery('✅ Guild disbanded successfully');
+    } else {
+        await ctx.answerCallbackQuery(`❌ ${result.message}`);
+    }
+});
+
+bot.callbackQuery(/^page_guild_list_(.+)$/, async (ctx) => {
+    const page = parseInt(ctx.match[1]) || 1;
+    await handleGuildListPage(ctx, page);
 });
 
 bot.callbackQuery(/^guild_list_(\d+)$/, async (ctx) => {

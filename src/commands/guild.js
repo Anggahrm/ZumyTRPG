@@ -11,6 +11,32 @@ async function guildCommand(ctx) {
         return await ctx.reply('❌ Kamu harus memulai game terlebih dahulu. Gunakan /start');
     }
     
+    // Check if there are command arguments
+    const args = ctx.message?.text?.split(' ').slice(1) || [];
+    const subcommand = args[0];
+    
+    // Handle subcommands
+    if (subcommand) {
+        switch (subcommand.toLowerCase()) {
+            case 'create':
+                return await handleCreateGuild(ctx, args);
+            case 'contribute':
+                return await handleContributeGuild(ctx, args);
+            case 'desc':
+            case 'description':
+                return await handleChangeDescription(ctx, args);
+            case 'promote':
+                return await handlePromoteMember(ctx, args);
+            case 'demote':
+                return await handleDemoteMember(ctx, args);
+            case 'kick':
+                return await handleKickMember(ctx, args);
+            default:
+                return await ctx.reply(`❌ Unknown subcommand: ${subcommand}`);
+        }
+    }
+    
+    // Default behavior - show guild info or menu
     if (player.guildId) {
         // Player is in a guild - show guild info
         await showGuildInfo(ctx, player);
@@ -403,6 +429,200 @@ async function handleLeaveGuild(ctx) {
 async function handleGuildListPage(ctx, page) {
     const player = ctx.player;
     await showGuildList(ctx, player, page);
+}
+
+// Guild subcommand handlers
+async function handleCreateGuild(ctx, args) {
+    const player = ctx.player;
+    
+    if (player.guildId) {
+        return await ctx.reply('❌ Kamu sudah bergabung dengan guild. Keluar guild terlebih dahulu.');
+    }
+    
+    if (player.level < 5) {
+        return await ctx.reply('❌ Level minimum untuk membuat guild adalah 5.');
+    }
+    
+    if (player.gold < 1000) {
+        return await ctx.reply('❌ Kamu membutuhkan 1000 gold untuk membuat guild.');
+    }
+    
+    if (args.length < 3) {
+        return await ctx.reply('❌ Format: `/guild create <name> <tag> [description]`\n\nContoh: `/guild create Dragon Warriors DW Best guild ever!`');
+    }
+    
+    const name = args[1];
+    const tag = args[2];
+    const description = args.slice(3).join(' ') || '';
+    
+    // Validate name and tag
+    if (name.length < 3 || name.length > 30) {
+        return await ctx.reply('❌ Nama guild harus 3-30 karakter.');
+    }
+    
+    if (tag.length < 2 || tag.length > 5) {
+        return await ctx.reply('❌ Tag guild harus 2-5 karakter.');
+    }
+    
+    if (description.length > 100) {
+        return await ctx.reply('❌ Deskripsi guild maksimal 100 karakter.');
+    }
+    
+    const result = await GuildService.createGuild(player.userId, player.username, name, tag, description);
+    
+    if (result.success) {
+        const message = 
+            `🎉 **Guild Created Successfully!**\n\n` +
+            `🏰 **${result.guild.name}** [${result.guild.tag}]\n` +
+            `👑 You are now the guild leader!\n\n` +
+            `💰 Creation fee: 1000 gold deducted\n\n` +
+            `🎯 Start recruiting members and build your guild!`;
+        
+        await ctx.reply(message, { parse_mode: 'Markdown' });
+    } else {
+        await ctx.reply(`❌ ${result.message}`);
+    }
+}
+
+async function handleContributeGuild(ctx, args) {
+    const player = ctx.player;
+    
+    if (!player.guildId) {
+        return await ctx.reply('❌ Kamu harus bergabung dengan guild terlebih dahulu.');
+    }
+    
+    if (args.length < 2) {
+        return await ctx.reply('❌ Format: `/guild contribute <amount>`\n\nContoh: `/guild contribute 100`');
+    }
+    
+    const amount = parseInt(args[1]);
+    
+    if (isNaN(amount) || amount <= 0) {
+        return await ctx.reply('❌ Jumlah harus berupa angka positif.');
+    }
+    
+    if (player.gold < amount) {
+        return await ctx.reply('❌ Gold tidak mencukupi.');
+    }
+    
+    const result = await GuildService.contributeToGuild(player.guildId, player.userId, amount);
+    
+    if (result.success) {
+        const message = 
+            `💰 **Contribution Successful!**\n\n` +
+            `Contributed: ${formatNumber(amount)} gold\n` +
+            `Guild XP gained: ${result.xpGained}\n` +
+            `Your contribution points: +${amount}`;
+        
+        await ctx.reply(message, { parse_mode: 'Markdown' });
+    } else {
+        await ctx.reply(`❌ ${result.message}`);
+    }
+}
+
+async function handleChangeDescription(ctx, args) {
+    const player = ctx.player;
+    
+    if (!player.guildId) {
+        return await ctx.reply('❌ Kamu harus bergabung dengan guild terlebih dahulu.');
+    }
+    
+    if (player.guildRank !== 'leader') {
+        return await ctx.reply('❌ Hanya leader yang bisa mengubah deskripsi guild.');
+    }
+    
+    if (args.length < 2) {
+        return await ctx.reply('❌ Format: `/guild desc <new description>`\n\nContoh: `/guild desc We are the best guild!`');
+    }
+    
+    const newDescription = args.slice(1).join(' ');
+    
+    if (newDescription.length > 100) {
+        return await ctx.reply('❌ Deskripsi guild maksimal 100 karakter.');
+    }
+    
+    const result = await GuildService.updateGuildSettings(player.guildId, { description: newDescription }, player.userId);
+    
+    if (result.success) {
+        await ctx.reply('✅ Deskripsi guild berhasil diubah!');
+    } else {
+        await ctx.reply(`❌ ${result.message}`);
+    }
+}
+
+async function handlePromoteMember(ctx, args) {
+    const player = ctx.player;
+    
+    if (!player.guildId) {
+        return await ctx.reply('❌ Kamu harus bergabung dengan guild terlebih dahulu.');
+    }
+    
+    if (player.guildRank !== 'leader') {
+        return await ctx.reply('❌ Hanya leader yang bisa promote member.');
+    }
+    
+    if (args.length < 2) {
+        return await ctx.reply('❌ Format: `/guild promote <username>`\n\nContoh: `/guild promote john_doe`');
+    }
+    
+    const targetUsername = args[1];
+    const result = await GuildService.promoteMember(player.guildId, targetUsername, player.userId);
+    
+    if (result.success) {
+        await ctx.reply(`✅ ${targetUsername} berhasil dipromote menjadi officer!`);
+    } else {
+        await ctx.reply(`❌ ${result.message}`);
+    }
+}
+
+async function handleDemoteMember(ctx, args) {
+    const player = ctx.player;
+    
+    if (!player.guildId) {
+        return await ctx.reply('❌ Kamu harus bergabung dengan guild terlebih dahulu.');
+    }
+    
+    if (player.guildRank !== 'leader') {
+        return await ctx.reply('❌ Hanya leader yang bisa demote member.');
+    }
+    
+    if (args.length < 2) {
+        return await ctx.reply('❌ Format: `/guild demote <username>`\n\nContoh: `/guild demote john_doe`');
+    }
+    
+    const targetUsername = args[1];
+    const result = await GuildService.demoteMember(player.guildId, targetUsername, player.userId);
+    
+    if (result.success) {
+        await ctx.reply(`✅ ${targetUsername} berhasil didemote menjadi member!`);
+    } else {
+        await ctx.reply(`❌ ${result.message}`);
+    }
+}
+
+async function handleKickMember(ctx, args) {
+    const player = ctx.player;
+    
+    if (!player.guildId) {
+        return await ctx.reply('❌ Kamu harus bergabung dengan guild terlebih dahulu.');
+    }
+    
+    if (player.guildRank !== 'leader') {
+        return await ctx.reply('❌ Hanya leader yang bisa kick member.');
+    }
+    
+    if (args.length < 2) {
+        return await ctx.reply('❌ Format: `/guild kick <username>`\n\nContoh: `/guild kick john_doe`');
+    }
+    
+    const targetUsername = args[1];
+    const result = await GuildService.kickMember(player.guildId, targetUsername, player.userId);
+    
+    if (result.success) {
+        await ctx.reply(`✅ ${targetUsername} berhasil di-kick dari guild!`);
+    } else {
+        await ctx.reply(`❌ ${result.message}`);
+    }
 }
 
 module.exports = {

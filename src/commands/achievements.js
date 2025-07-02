@@ -13,7 +13,19 @@ async function achievementsCommand(ctx) {
     
     const playerAchievements = AchievementService.getPlayerAchievements(player);
     const categories = ['all', 'unlocked', 'locked'];
-    const currentCategory = ctx.match ? ctx.match.split('_')[2] || 'all' : 'all';
+    
+    // Handle different types of ctx.match
+    let currentCategory = 'all';
+    if (ctx.match) {
+        if (Array.isArray(ctx.match) && ctx.match.length > 2) {
+            // From regex callback like achievements_category_(.+)_(.+)
+            currentCategory = ctx.match[2] || 'all';
+        } else if (typeof ctx.match === 'string') {
+            // From string match, extract category
+            const parts = ctx.match.split('_');
+            currentCategory = parts[2] || 'all';
+        }
+    }
     
     let filteredAchievements = playerAchievements;
     
@@ -50,7 +62,15 @@ async function achievementsCommand(ctx) {
         message += `📭 Tidak ada achievement di kategori "${currentCategory}".`;
     } else {
         // Show first 8 achievements
-        const page = ctx.match ? parseInt(ctx.match.split('_')[3]) || 0 : 0;
+        let page = 0;
+        if (ctx.match) {
+            if (Array.isArray(ctx.match) && ctx.match.length > 3) {
+                page = parseInt(ctx.match[3]) || 0;
+            } else if (typeof ctx.match === 'string') {
+                const parts = ctx.match.split('_');
+                page = parseInt(parts[3]) || 0;
+            }
+        }
         const itemsPerPage = 8;
         const startIndex = page * itemsPerPage;
         const endIndex = Math.min(startIndex + itemsPerPage, filteredAchievements.length);
@@ -94,7 +114,15 @@ async function achievementsCommand(ctx) {
     
     // Pagination for current category
     if (filteredAchievements.length > 8) {
-        const page = ctx.match ? parseInt(ctx.match.split('_')[3]) || 0 : 0;
+        let page = 0;
+        if (ctx.match) {
+            if (Array.isArray(ctx.match) && ctx.match.length > 3) {
+                page = parseInt(ctx.match[3]) || 0;
+            } else if (typeof ctx.match === 'string') {
+                const parts = ctx.match.split('_');
+                page = parseInt(parts[3]) || 0;
+            }
+        }
         const totalPages = Math.ceil(filteredAchievements.length / 8);
         
         if (page > 0) {

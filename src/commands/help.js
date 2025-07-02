@@ -40,8 +40,8 @@ async function helpCommand(ctx) {
         .text('🎮 Main Menu', 'quick_start')
         .text('👤 Profile', 'quick_profile').row()
         .text('📜 Quests', 'quest_type_available')
-        .text('� Achievements', 'achievements').row()
-        .text('�🏰 Guild', 'refresh_guild')
+        .text('🏆 Achievements', 'achievements').row()
+        .text('🏰 Guild', 'refresh_guild')
         .text('🏆 Leaderboard', 'leaderboard_level');
     
     if (ctx.callbackQuery) {
