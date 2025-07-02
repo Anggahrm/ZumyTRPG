@@ -2,7 +2,8 @@ const { InlineKeyboard } = require('grammy');
 const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
 const PlayerService = require('../services/playerService');
-const { items } = require('../data/items');
+const ConsumableService = require('../services/consumableService');
+const { items, consumables } = require('../data/items');
 const { getItemRarityEmoji, formatNumber, chunkArray } = require('../utils/common');
 
 async function inventoryCommand(ctx) {
@@ -231,6 +232,7 @@ async function handleEquipItem(ctx, itemName) {
 async function handleUseItem(ctx, itemName) {
     const player = ctx.player;
     const item = items[itemName];
+    const consumable = consumables[itemName];
     
     if (!item) {
         return await ctx.answerCallbackQuery('❌ Item tidak ditemukan.');
@@ -240,6 +242,34 @@ async function handleUseItem(ctx, itemName) {
         return await ctx.answerCallbackQuery('❌ Kamu tidak memiliki item ini.');
     }
     
+    // Use ConsumableService for consumables
+    if (consumable) {
+        const result = await ConsumableService.useConsumable(player, itemName, 1);
+        
+        if (result.success) {
+            const message = 
+                `${consumable.icon} **${itemName}** digunakan!\n\n` +
+                `${consumable.description}\n\n` +
+                `✨ **Effects:**\n${result.message}`;
+            
+            const keyboard = new InlineKeyboard()
+                .text('🎒 Inventory', 'quick_inventory')
+                .text('🏹 Hunt', 'quick_hunt').row()
+                .text('👤 Profile', 'quick_profile');
+            
+            await safeEditMessage(ctx, message, {
+                parse_mode: 'Markdown',
+                reply_markup: keyboard
+            });
+            
+            await ctx.answerCallbackQuery(`✅ ${itemName} used successfully!`);
+        } else {
+            await ctx.answerCallbackQuery(`❌ ${result.error}`);
+        }
+        return;
+    }
+    
+    // Legacy healing items (for backwards compatibility)
     if (item.heal) {
         if (player.hp >= player.maxHp) {
             return await ctx.answerCallbackQuery('❌ HP kamu sudah penuh!');

@@ -1,6 +1,7 @@
 const { InlineKeyboard } = require("grammy");
 const { requirePlayer } = require('../middlewares/playerLoader');
 const PlayerService = require('../services/playerService');
+const ConsumableService = require('../services/consumableService');
 const { getItemRarityEmoji, getProgressBar, formatNumber } = require('../utils/common');
 const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 
@@ -48,6 +49,16 @@ async function profileCommand(ctx) {
     totalDefense += (player.level - 1) * 1;
     totalHp += (player.level - 1) * 10;
     
+    // Clean expired buffs and get active buffs
+    await ConsumableService.cleanExpiredBuffs(player);
+    const activeBuffs = ConsumableService.getActiveBuffs(player);
+    const buffedStats = ConsumableService.calculateBuffedStats(player);
+    
+    let buffsText = '';
+    if (activeBuffs.length > 0) {
+        buffsText = `\n✨ *Active Buffs:*\n${ConsumableService.formatBuffDisplay(activeBuffs)}\n`;
+    }
+    
     const profileMessage = 
         `👤 *Profil ${player.username}*\n\n` +
         `🎯 Level: ${player.level}\n` +
@@ -55,11 +66,12 @@ async function profileCommand(ctx) {
         `${xpProgress} (${Math.floor((player.xp / xpNeeded) * 100)}%)\n\n` +
         `❤️ HP: ${player.hp}/${player.maxHp}\n` +
         `${hpProgress}\n\n` +
-        `⚔️ Attack: ${player.attack}\n` +
-        `🛡️ Defense: ${player.defense}\n` +
+        `⚔️ Attack: ${buffedStats.attack}${buffedStats.attack !== player.attack ? ` (${player.attack})` : ''}\n` +
+        `🛡️ Defense: ${buffedStats.defense}${buffedStats.defense !== player.defense ? ` (${player.defense})` : ''}\n` +
         `💰 Gold: ${formatNumber(player.gold)}\n` +
-        `💎 Gems: ${formatNumber(player.gems)}\n\n` +
-        `🎒 *Equipment:*\n${equipmentText}\n` +
+        `💎 Gems: ${formatNumber(player.gems)}\n` +
+        buffsText +
+        `\n🎒 *Equipment:*\n${equipmentText}\n` +
         `📊 *Statistics:*\n` +
         `• Total Hunts: ${player.stats.totalHunts}\n` +
         `• Monsters Killed: ${player.stats.monstersKilled}\n` +
@@ -72,8 +84,9 @@ async function profileCommand(ctx) {
     const keyboard = new InlineKeyboard()
         .text("🎒 Inventory", "inv_category_all")
         .text("📜 Quests", "quest_type_active").row()
-        .text("🏆 Achievements", "achievements")
-        .text("⚙️ Settings", "settings").row()
+        .text("💊 Heal", "quick_heal")
+        .text("🏆 Achievements", "achievements").row()
+        .text("⚙️ Settings", "settings")
         .text("🔄 Refresh", "refresh_profile");
     
     if (ctx.callbackQuery) {

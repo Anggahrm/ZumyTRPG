@@ -247,8 +247,19 @@ const rarityColors = {
     'legendary': '🟡'
 };
 
+const { consumables, consumableMaterials } = require('./consumables');
+
+// Merge consumables and materials with items
+const allItems = {
+    ...items,
+    ...consumables,
+    ...consumableMaterials
+};
+
 module.exports = {
-    items,
+    items: allItems,
+    consumables,
+    consumableMaterials,
     getItemsByType,
     getItemsByRarity,
     rarityColors

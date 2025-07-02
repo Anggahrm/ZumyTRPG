@@ -1,7 +1,20 @@
 // Helper function to safely edit message text without throwing "message not modified" errors
-async function safeEditMessage(ctx, text, options = {}) {
+async function safeEditMessage(ctx, ...args) {
     try {
-        await ctx.editMessageText(text, options);
+        // Handle different call signatures:
+        // safeEditMessage(ctx, text, options)
+        // safeEditMessage(ctx, chatId, messageId, text, options)
+        if (args.length === 2 || (args.length === 3 && typeof args[2] === 'object')) {
+            // Standard signature: (ctx, text, options)
+            const [text, options = {}] = args;
+            await ctx.editMessageText(text, options);
+        } else if (args.length >= 4) {
+            // Extended signature: (ctx, chatId, messageId, text, options)
+            const [chatId, messageId, text, options = {}] = args;
+            await ctx.api.editMessageText(chatId, messageId, text, options);
+        } else {
+            throw new Error('Invalid arguments for safeEditMessage');
+        }
     } catch (error) {
         // Ignore "message not modified" errors
         if (!error.description || !error.description.includes('message is not modified')) {

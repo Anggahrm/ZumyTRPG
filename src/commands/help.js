@@ -23,6 +23,7 @@ async function helpCommand(ctx) {
         `• /heal - Gunakan item untuk heal HP\n\n` +
         `📜 **Quests & Progression:**\n` +
         `• /quest - Lihat dan kelola quest\n` +
+        `• /achievements - Lihat dan unlock achievements\n` +
         `• /leaderboard - Lihat ranking player\n\n` +
         `🏰 **Guild System:**\n` +
         `• /guild - Menu guild (join, create, manage)\n` +
@@ -39,7 +40,8 @@ async function helpCommand(ctx) {
         .text('🎮 Main Menu', 'quick_start')
         .text('👤 Profile', 'quick_profile').row()
         .text('📜 Quests', 'quest_type_available')
-        .text('🏰 Guild', 'refresh_guild').row()
+        .text('� Achievements', 'achievements').row()
+        .text('�🏰 Guild', 'refresh_guild')
         .text('🏆 Leaderboard', 'leaderboard_level');
     
     if (ctx.callbackQuery) {

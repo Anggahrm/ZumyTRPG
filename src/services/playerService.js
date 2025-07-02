@@ -384,6 +384,46 @@ class PlayerService {
             };
         });
     }
+
+    // Achievement methods
+    static async unlockAchievement(userId, achievementId) {
+        return await Player.updateOne(
+            { userId },
+            { $addToSet: { achievements: achievementId } }
+        );
+    }
+
+    static async addGems(userId, amount) {
+        return await Player.updateOne(
+            { userId },
+            { $inc: { gems: amount } }
+        );
+    }
+
+    static async updateStat(userId, statName, amount) {
+        const updateQuery = {};
+        updateQuery[`stats.${statName}`] = amount;
+        
+        return await Player.updateOne(
+            { userId },
+            { $inc: updateQuery }
+        );
+    }
+
+    static async incrementLowHpSurvival(userId) {
+        return await Player.updateOne(
+            { userId },
+            { $inc: { 'stats.lowHpSurvival': 1 } }
+        );
+    }
+
+    // Update player with arbitrary data
+    static async updatePlayer(userId, updateData) {
+        return await Player.updateOne(
+            { userId },
+            updateData
+        );
+    }
 }
 
 module.exports = PlayerService;

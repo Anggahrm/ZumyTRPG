@@ -3,6 +3,7 @@ const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer, requireAlive } = require('../middlewares/playerLoader');
 const { canPerformAction, createCooldownMessage } = require('../utils/cooldown');
 const CombatService = require('../services/combatService');
+const AchievementService = require('../services/achievementService');
 const Player = require('../models/Player');
 const config = require('../../config');
 
@@ -42,6 +43,14 @@ async function huntCommand(ctx) {
         // Reload player to get updated HP
         const updatedPlayer = await Player.findById(player._id);
         
+        // Check for safety
+        if (!updatedPlayer) {
+            throw new Error('Player not found after hunt');
+        }
+        
+        // Check for new achievements
+        const newAchievements = await AchievementService.checkAchievements(updatedPlayer);
+        
         if (result.victory) {
             let message = 
                 `🏹 *Hunt Berhasil!*\n\n` +
@@ -65,10 +74,10 @@ async function huntCommand(ctx) {
             }
             
             // Add achievements
-            if (result.achievements && result.achievements.length > 0) {
+            if (newAchievements && newAchievements.length > 0) {
                 message += '\n\n🏆 **Achievement Unlocked:**';
-                for (const achievement of result.achievements) {
-                    message += `\n• ${achievement.name}`;
+                for (const achievement of newAchievements) {
+                    message += `\n• ${achievement.icon} ${achievement.name}`;
                 }
             }
             

@@ -1,37 +1,35 @@
 const { InlineKeyboard } = require('grammy');
 const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
-const { canPerformAction, createCooldownMessage } = require('../utils/cooldown');
+const DailyService = require('../services/dailyService');
+const AchievementService = require('../services/achievementService');
 const PlayerService = require('../services/playerService');
-const QuestService = require('../services/questService');
-const { getRandomInt, getRandomElement, formatNumber } = require('../utils/common');
-const config = require('../../config');
+const Player = require('../models/Player');
+const { formatNumber } = require('../utils/common');
 
 async function dailyCommand(ctx) {
     const player = ctx.player;
     
     if (!player) {
-        return await ctx.reply('❌ Kamu harus memulai game terlebih dahulu. Gunakan /start');
+        return await safeReply(ctx, '❌ Kamu harus memulai game terlebih dahulu. Gunakan /start');
     }
     
-    // Check cooldown (24 hours)
-    const cooldownCheck = canPerformAction(player.lastDaily, config.GAME_CONFIG.COOLDOWNS.DAILY);
-    if (!cooldownCheck.canPerform) {
-        const nextDaily = new Date(player.lastDaily.getTime() + (24 * 60 * 60 * 1000));
-        const timeUntilNext = nextDaily - new Date();
-        const hoursLeft = Math.floor(timeUntilNext / (1000 * 60 * 60));
-        const minutesLeft = Math.floor((timeUntilNext % (1000 * 60 * 60)) / (1000 * 60));
+    // Check if player can claim daily reward
+    if (!DailyService.canClaimDaily(player)) {
+        const timeUntil = DailyService.getTimeUntilNextDaily();
+        const streakDay = player.dailyStreak || 0;
         
         const message = 
-            `🎁 *Daily Bonus*\n\n` +
-            `⏰ Kamu sudah mengambil daily bonus hari ini!\n\n` +
-            `⏳ Next daily bonus: ${hoursLeft}h ${minutesLeft}m\n\n` +
-            `💡 Daily bonus reset setiap 24 jam.`;
+            `🎁 *Daily Reward*\n\n` +
+            `⏰ Kamu sudah mengambil daily reward hari ini!\n\n` +
+            `🔥 Current Streak: ${streakDay} days\n` +
+            `⏳ Next reward: ${timeUntil}\n\n` +
+            `💡 Daily reward reset setiap hari pada 00:00 UTC.`;
         
         const keyboard = new InlineKeyboard()
             .text('🏹 Hunt', 'quick_hunt')
             .text('🗺️ Adventure', 'quick_adventure').row()
-            .text('🔨 Work', 'quick_work')
+            .text('📋 Daily Challenges', 'daily_challenges')
             .text('👤 Profile', 'quick_profile');
             
         return await safeReply(ctx, message, {
@@ -40,140 +38,118 @@ async function dailyCommand(ctx) {
         });
     }
     
-    // Show daily bonus message
-    const dailyMessage = await ctx.reply('🎁 Mengambil daily bonus...');
+    // Show claiming message
+    const claimingMessage = await safeReply(ctx, '🎁 Mengambil daily reward...');
     
     try {
-        // Calculate daily bonus based on level and streak
-        const baseGold = 50 + (player.level * 10);
-        const baseXp = 25 + (player.level * 5);
+        // Claim daily reward
+        const result = await DailyService.claimDailyReward(player);
         
-        // Calculate streak bonus (placeholder - could be implemented later)
-        const streakMultiplier = 1.0; // Could be based on consecutive days
+        if (!result.success) {
+            await safeEditMessage(ctx, claimingMessage.chat.id, claimingMessage.message_id, 
+                `❌ ${result.error}`);
+            return;
+        }
         
-        const goldReward = Math.floor(baseGold * streakMultiplier);
-        const xpReward = Math.floor(baseXp * streakMultiplier);
+        // Reload player for achievement checking
+        const updatedPlayer = await Player.findById(player._id);
         
-        // Award rewards
-        const xpResult = await PlayerService.addXp(player, xpReward);
-        await PlayerService.addGold(player, goldReward);
+        // Check for new achievements
+        const newAchievements = await AchievementService.checkAchievements(updatedPlayer);
         
-        // Random bonus items
-        const bonusItems = [
-            { name: 'Health Potion', chance: 0.3, quantity: [1, 2] },
-            { name: 'Apple', chance: 0.5, quantity: [2, 4] },
-            { name: 'Fish', chance: 0.4, quantity: [1, 3] },
-            { name: 'Wood', chance: 0.6, quantity: [3, 6] },
-            { name: 'Stone', chance: 0.5, quantity: [2, 5] },
-            { name: 'Iron Ore', chance: 0.2, quantity: [1, 2] },
-            { name: 'Gold Ore', chance: 0.1, quantity: [1, 1] },
-            { name: 'Mana Potion', chance: 0.15, quantity: [1, 1] }
-        ];
+        // Format message
+        let message = DailyService.formatDailyRewardMessage(result);
         
-        const earnedItems = {};
-        for (const item of bonusItems) {
-            if (Math.random() < item.chance) {
-                const quantity = getRandomInt(item.quantity[0], item.quantity[1]);
-                await PlayerService.addItem(player, item.name, quantity);
-                earnedItems[item.name] = quantity;
+        // Add achievements if any
+        if (newAchievements && newAchievements.length > 0) {
+            message += `\n\n🏆 *Achievement Unlocked:*\n`;
+            for (const achievement of newAchievements) {
+                message += `• ${achievement.icon} ${achievement.name}\n`;
             }
         }
-        
-        // Special level milestone rewards
-        let milestoneReward = null;
-        if (player.level >= 10 && player.level % 5 === 0) {
-            const milestoneRewards = [
-                { name: 'Lucky Charm', level: 10 },
-                { name: 'Greater Health Potion', level: 15 },
-                { name: 'Teleport Scroll', level: 20 },
-                { name: 'Mithril Ore', level: 25 }
-            ];
-            
-            const reward = milestoneRewards.find(r => r.level === player.level);
-            if (reward) {
-                await PlayerService.addItem(player, reward.name, 1);
-                milestoneReward = reward.name;
-            }
-        }
-        
-        // Update quest progress
-        await QuestService.updateQuestProgress(player, 'daily');
-        
-        // Update stats
-        await PlayerService.updateStats(player, {
-            goldEarned: goldReward
-        });
-        
-        // Check achievements
-        const achievements = await PlayerService.checkAchievements(player);
-        
-        let message = 
-            `🎁 **Daily Bonus Claimed!**\n\n` +
-            `💰 +${formatNumber(goldReward)} Gold\n` +
-            `⭐ +${xpReward} XP`;
-        
-        // Add level up info
-        if (xpResult.levelUps && xpResult.levelUps.length > 0) {
-            for (const levelUp of xpResult.levelUps) {
-                message += `\n🎉 **LEVEL UP!** ${levelUp.from} → ${levelUp.to}`;
-            }
-        }
-        
-        // Add bonus items
-        if (Object.keys(earnedItems).length > 0) {
-            message += '\n\n🎁 **Bonus Items:**';
-            for (const [itemName, quantity] of Object.entries(earnedItems)) {
-                message += `\n• ${itemName} x${quantity}`;
-            }
-        }
-        
-        // Add milestone reward
-        if (milestoneReward) {
-            message += `\n\n🌟 **Level ${player.level} Milestone Reward:**\n• ${milestoneReward} x1`;
-        }
-        
-        // Add achievements
-        if (achievements && achievements.length > 0) {
-            message += '\n\n🏆 **Achievement Unlocked:**';
-            for (const achievement of achievements) {
-                message += `\n• ${achievement.name}`;
-            }
-        }
-        
-        message += `\n\n💰 Total Gold: ${formatNumber(player.gold)}`;
-        message += `\n⏰ Next daily bonus: 24 hours`;
         
         const keyboard = new InlineKeyboard()
             .text('🏹 Hunt', 'quick_hunt')
             .text('🗺️ Adventure', 'quick_adventure').row()
-            .text('🔨 Work', 'quick_work')
-            .text('🎒 Inventory', 'quick_inventory').row()
-            .text('📜 Quests', 'quest_type_daily')
-            .text('👤 Profile', 'quick_profile');
+            .text('📋 Daily Challenges', 'daily_challenges')
+            .text('🛒 Shop', 'quick_shop').row()
+            .text('👤 Profile', 'quick_profile')
+            .text('🔄 Refresh', 'refresh_daily');
         
-        await safeEditMessage(ctx, 
-            ctx.chat.id,
-            dailyMessage.message_id,
-            message,
-            {
+        await safeEditMessage(ctx, claimingMessage.chat.id, claimingMessage.message_id, 
+            message, {
                 parse_mode: 'Markdown',
                 reply_markup: keyboard
-            }
-        );
-        
-        // Update last daily time
-        player.lastDaily = new Date();
-        await player.save();
-        
+            });
+            
     } catch (error) {
-        console.error('Daily error:', error);
-        await safeEditMessage(ctx, 
-            ctx.chat.id,
-            dailyMessage.message_id,
-            '❌ Terjadi error saat mengambil daily bonus. Silakan coba lagi.'
-        );
+        console.error('Daily command error:', error);
+        await safeEditMessage(ctx, claimingMessage.chat.id, claimingMessage.message_id, 
+            '❌ Terjadi error saat mengambil daily reward. Coba lagi nanti.');
     }
 }
 
-module.exports = dailyCommand;
+async function dailyChallengesCommand(ctx) {
+    const player = ctx.player;
+    
+    if (!player) {
+        return await safeReply(ctx, '❌ Kamu harus memulai game terlebih dahulu. Gunakan /start');
+    }
+    
+    // Reset daily challenges if needed
+    await DailyService.resetDailyChallenges(player);
+    
+    // Get today's challenges
+    const challenges = DailyService.getDailyChallenges(player, 5);
+    const completedToday = player.dailyChallengesCompleted || [];
+    
+    let message = `📋 *Daily Challenges*\n\n`;
+    message += `Complete challenges for extra rewards!\n\n`;
+    
+    if (challenges.length === 0) {
+        message += `🎉 All challenges completed for today!\n`;
+        message += `Come back tomorrow for new challenges.`;
+    } else {
+        for (const challenge of challenges) {
+            const isCompleted = completedToday.includes(challenge.id);
+            const progress = player.dailyChallengeProgress?.get(challenge.id) || 0;
+            
+            if (isCompleted) {
+                message += `✅ ${challenge.name}\n`;
+                message += `   ${challenge.description} - COMPLETED!\n`;
+            } else {
+                message += `📝 ${challenge.name}\n`;
+                message += `   ${challenge.description}\n`;
+                message += `   Progress: ${progress}/${challenge.requirement}\n`;
+                message += `   Reward: 💰${challenge.reward.gold} 💎${challenge.reward.gems} ⭐${challenge.reward.xp}\n`;
+            }
+            message += `\n`;
+        }
+    }
+    
+    const completedCount = completedToday.length;
+    const totalChallenges = DailyService.getDailyChallenges(player, 5).length;
+    message += `\n📊 Progress: ${completedCount}/${totalChallenges} challenges completed`;
+    
+    const keyboard = new InlineKeyboard()
+        .text('🎁 Daily Reward', 'quick_daily')
+        .text('🏹 Hunt', 'quick_hunt').row()
+        .text('📜 Quests', 'quick_quest')
+        .text('🔨 Craft', 'quick_craft').row()
+        .text('🔄 Refresh', 'daily_challenges')
+        .text('🔙 Back', 'quick_daily');
+    
+    if (ctx.callbackQuery) {
+        await safeEditMessage(ctx, message, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+        });
+    } else {
+        await safeReply(ctx, message, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+        });
+    }
+}
 
+module.exports = { dailyCommand, dailyChallengesCommand };

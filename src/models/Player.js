@@ -32,6 +32,21 @@ const playerSchema = new mongoose.Schema({
     lastDaily: { type: Date, default: null },
     lastDungeon: { type: Date, default: null },
     
+    // Daily system
+    dailyStreak: { type: Number, default: 0 },
+    dailyChallengesCompleted: [String],
+    dailyChallengeProgress: { type: Map, of: Number, default: {} },
+    lastChallengeReset: { type: Date, default: null },
+    
+    // Consumables and buffs
+    consumableCooldowns: { type: Map, of: Date, default: {} },
+    activeBuffs: [{
+        type: String,
+        value: Number,
+        expiresAt: Date,
+        source: String
+    }],
+    
     // Guild system
     guildId: { type: mongoose.Schema.Types.ObjectId, ref: 'Guild', default: null },
     guildRank: { type: String, default: 'member' }, // member, officer, leader
@@ -56,7 +71,9 @@ const playerSchema = new mongoose.Schema({
         monstersKilled: { type: Number, default: 0 },
         bossesKilled: { type: Number, default: 0 },
         goldEarned: { type: Number, default: 0 },
-        itemsCrafted: { type: Number, default: 0 }
+        itemsCrafted: { type: Number, default: 0 },
+        questsCompleted: { type: Number, default: 0 },
+        lowHpSurvival: { type: Number, default: 0 }
     },
     
     // Settings
