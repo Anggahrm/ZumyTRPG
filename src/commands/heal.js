@@ -77,7 +77,7 @@ async function healCommand(ctx) {
         }
         message += `\n`;
         
-        keyboard.text(`${item.icon} Use ${itemName}`, `heal_use_${itemName}`);
+        keyboard.text(`${item.icon} Use ${itemName}`, `heal_use_${encodeURIComponent(itemName)}`);
         
         if (healingItems.indexOf([itemName, item]) % 2 === 1) {
             keyboard.row();
@@ -104,7 +104,8 @@ async function healCommand(ctx) {
 async function handleHealUse(ctx, itemName) {
     const player = ctx.player;
     
-    if (!player.hasItem(itemName)) {
+    const currentQuantity = player.inventory.get(itemName) || 0;
+    if (currentQuantity <= 0) {
         return await ctx.answerCallbackQuery('❌ Kamu tidak memiliki item ini.');
     }
     

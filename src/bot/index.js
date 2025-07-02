@@ -215,7 +215,7 @@ bot.callbackQuery("daily_challenges", dailyChallengesCommand);
 
 // Heal callbacks
 bot.callbackQuery(/^heal_use_(.+)$/, async (ctx) => {
-    const itemName = ctx.match[1];
+    const itemName = decodeURIComponent(ctx.match[1]);
     await handleHealUse(ctx, itemName);
 });
 
@@ -274,6 +274,28 @@ bot.callbackQuery(/^refresh_(.+)$/, async (ctx) => {
             await healCommand(ctx);
             break;
     }
+});
+
+// Handle settings callback
+bot.callbackQuery("settings", async (ctx) => {
+    const message = 
+        `⚙️ *Settings*\n\n` +
+        `🚧 **Coming Soon!**\n\n` +
+        `Settings feature sedang dalam pengembangan.\n` +
+        `Fitur yang akan tersedia:\n` +
+        `• 🔔 Notifications toggle\n` +
+        `• 💊 Auto-heal settings\n` +
+        `• 🌍 Language preferences\n` +
+        `• 🎨 UI customization\n\n` +
+        `Stay tuned for updates!`;
+    
+    const keyboard = new InlineKeyboard()
+        .text('🔙 Back to Profile', 'quick_profile');
+    
+    await ctx.editMessageText(message, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+    });
 });
 
 // Handle cancel callbacks

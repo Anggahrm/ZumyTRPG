@@ -82,7 +82,7 @@ async function profileCommand(ctx) {
         `🏆 Achievements: ${player.achievements.length}`;
     
     const keyboard = new InlineKeyboard()
-        .text("🎒 Inventory", "inv_category_all")
+        .text("🎒 Inventory", "quick_inventory")
         .text("📜 Quests", "quest_type_active").row()
         .text("💊 Heal", "quick_heal")
         .text("🏆 Achievements", "achievements").row()

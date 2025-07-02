@@ -21,28 +21,29 @@ class AchievementService {
                     isUnlocked = player.level >= achievement.requirement;
                     break;
                 case 'kills':
-                    isUnlocked = player.stats.monstersKilled >= achievement.requirement;
+                    isUnlocked = (player.stats.monstersKilled || 0) >= achievement.requirement;
                     break;
                 case 'bosses':
-                    isUnlocked = player.stats.bossesKilled >= achievement.requirement;
+                    isUnlocked = (player.stats.bossesKilled || 0) >= achievement.requirement;
                     break;
                 case 'gold_earned':
-                    isUnlocked = player.stats.goldEarned >= achievement.requirement;
+                    isUnlocked = (player.stats.goldEarned || 0) >= achievement.requirement;
                     break;
                 case 'crafted':
-                    isUnlocked = player.stats.itemsCrafted >= achievement.requirement;
+                    isUnlocked = (player.stats.itemsCrafted || 0) >= achievement.requirement;
                     break;
                 case 'hunts':
-                    isUnlocked = player.stats.totalHunts >= achievement.requirement;
+                    isUnlocked = (player.stats.totalHunts || 0) >= achievement.requirement;
                     break;
                 case 'quests':
-                    isUnlocked = player.stats.questsCompleted >= achievement.requirement;
+                    isUnlocked = (player.stats.questsCompleted || 0) >= achievement.requirement;
                     break;
                 case 'dungeons':
-                    isUnlocked = player.stats.totalDungeons >= achievement.requirement;
+                    isUnlocked = (player.stats.totalDungeons || 0) >= achievement.requirement;
                     break;
                 case 'collection':
-                    const uniqueItems = new Set(player.inventory.map(item => item.id)).size;
+                    // player.inventory is a Map, so we need to get the keys (item names)
+                    const uniqueItems = Array.from(player.inventory.keys()).length;
                     isUnlocked = uniqueItems >= achievement.requirement;
                     break;
                 case 'survival':
@@ -98,28 +99,28 @@ class AchievementService {
                 current = player.level;
                 break;
             case 'kills':
-                current = player.stats.monstersKilled;
+                current = player.stats.monstersKilled || 0;
                 break;
             case 'bosses':
-                current = player.stats.bossesKilled;
+                current = player.stats.bossesKilled || 0;
                 break;
             case 'gold_earned':
-                current = player.stats.goldEarned;
+                current = player.stats.goldEarned || 0;
                 break;
             case 'crafted':
-                current = player.stats.itemsCrafted;
+                current = player.stats.itemsCrafted || 0;
                 break;
             case 'hunts':
-                current = player.stats.totalHunts;
+                current = player.stats.totalHunts || 0;
                 break;
             case 'quests':
                 current = player.stats.questsCompleted || 0;
                 break;
             case 'dungeons':
-                current = player.stats.totalDungeons;
+                current = player.stats.totalDungeons || 0;
                 break;
             case 'collection':
-                current = new Set(player.inventory.map(item => item.id)).size;
+                current = Array.from(player.inventory.keys()).length;
                 break;
             case 'survival':
                 current = player.stats.lowHpSurvival || 0;
