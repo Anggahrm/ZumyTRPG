@@ -218,7 +218,7 @@ class PlayerService {
         for (const [itemName, quantity] of player.inventory.entries()) {
             const item = items[itemName];
             const rarity = item ? item.rarity : 'common';
-            const value = item ? item.value : 1;
+            const value = item ? (item.value || item.price || 1) : 1;
             
             inventoryItems.push({
                 name: itemName,
