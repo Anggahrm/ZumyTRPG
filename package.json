@@ -1,0 +1,44 @@
+{
+  "name": "telegram-rpg-bot-advanced",
+  "version": "2.0.0",
+  "description": "Advanced Telegram RPG Bot with modular architecture, interactive buttons, quest system, and guild features",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "rpg",
+    "game",
+    "grammy",
+    "mongodb",
+    "interactive",
+    "quest",
+    "guild",
+    "modular"
+  ],
+  "author": "RPG Bot Developer",
+  "license": "MIT",
+  "dependencies": {
+    "grammy": "^1.21.1",
+    "mongoose": "^8.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Anggahrm/ZumyTRPG"
+  },
+  "bugs": {
+    "url": "https://github.com/Anggahrm/ZumyTRPG/issues"
+  },
+  "homepage": "https://github.com/Anggahrm/ZumyTRPG#readme"
+}
+
