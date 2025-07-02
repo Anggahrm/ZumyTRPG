@@ -1,7 +1,9 @@
 const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer, requireAlive } = require('../middlewares/playerLoader');
 const { canPerformAction, createCooldownMessage } = require('../utils/cooldown');
 const CombatService = require('../services/combatService');
+const Player = require('../models/Player');
 const config = require('../../config');
 
 async function huntCommand(ctx) {
@@ -37,6 +39,9 @@ async function huntCommand(ctx) {
         // Perform hunt
         const result = await CombatService.hunt(player);
         
+        // Reload player to get updated HP
+        const updatedPlayer = await Player.findById(player._id);
+        
         if (result.victory) {
             let message = 
                 `🏹 *Hunt Berhasil!*\n\n` +
@@ -71,7 +76,7 @@ async function huntCommand(ctx) {
                 message += `\n\n💔 Kamu kehilangan ${result.damage} HP`;
             }
             
-            message += `\n\n❤️ HP: ${player.hp}/${player.maxHp}`;
+            message += `\n\n❤️ HP: ${updatedPlayer.hp}/${updatedPlayer.maxHp}`;
             
             const keyboard = new InlineKeyboard()
                 .text("🏹 Hunt Lagi", "quick_hunt")
@@ -79,11 +84,11 @@ async function huntCommand(ctx) {
                 .text("🏰 Dungeon", "dungeon_list")
                 .text("👤 Profile", "quick_profile").row();
                 
-            if (player.hp < player.maxHp * 0.3) {
+            if (updatedPlayer.hp < updatedPlayer.maxHp * 0.3) {
                 keyboard.text("❤️ Heal", "quick_heal");
             }
             
-            await ctx.api.editMessageText(
+            await safeEditMessage(ctx, 
                 ctx.chat.id,
                 huntingMessage.message_id,
                 message,
@@ -97,7 +102,7 @@ async function huntCommand(ctx) {
                 `💀 *Hunt Gagal!*\n\n` +
                 `⚔️ **${result.monster.name}** terlalu kuat!\n\n` +
                 `💔 Kamu kehilangan ${result.damage} HP\n` +
-                `❤️ HP: ${player.hp}/${player.maxHp}\n\n` +
+                `❤️ HP: ${updatedPlayer.hp}/${updatedPlayer.maxHp}\n\n` +
                 `💡 *Tips:* Tingkatkan level atau equipment kamu!`;
             
             const keyboard = new InlineKeyboard()
@@ -106,7 +111,7 @@ async function huntCommand(ctx) {
                 .text('🗺️ Adventure', 'quick_adventure')
                 .text('🔨 Work', 'quick_work');
             
-            await ctx.api.editMessageText(
+            await safeEditMessage(ctx, 
                 ctx.chat.id,
                 huntingMessage.message_id,
                 message,
@@ -117,13 +122,15 @@ async function huntCommand(ctx) {
             );
         }
         
-        // Update last hunt time
-        player.lastHunt = new Date();
-        await player.save();
+        // Update last hunt time - reload player to get updated HP
+        await Player.updateOne(
+            { _id: player._id },
+            { lastHunt: new Date() }
+        );
         
     } catch (error) {
         console.error('Hunt error:', error);
-        await ctx.api.editMessageText(
+        await safeEditMessage(ctx, 
             ctx.chat.id,
             huntingMessage.message_id,
             '❌ Terjadi error saat berburu. Silakan coba lagi.'

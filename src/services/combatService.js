@@ -47,6 +47,11 @@ class CombatService {
             // Check achievements
             const achievements = await PlayerService.checkAchievements(player);
             
+            // Apply damage to player even when winning
+            if (combatResult.damage > 0) {
+                await PlayerService.damagePlayer(player, combatResult.damage);
+            }
+            
             return {
                 success: true,
                 victory: true,

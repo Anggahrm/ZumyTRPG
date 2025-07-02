@@ -1,4 +1,5 @@
 const { InlineKeyboard } = require("grammy");
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 
 async function helpCommand(ctx) {
     const helpMessage = 
@@ -42,12 +43,12 @@ async function helpCommand(ctx) {
         .text('🏆 Leaderboard', 'leaderboard_level');
     
     if (ctx.callbackQuery) {
-        await ctx.editMessageText(helpMessage, {
+        await safeEditMessage(ctx, helpMessage, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     } else {
-        await ctx.reply(helpMessage, {
+        await safeReply(ctx, helpMessage, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });

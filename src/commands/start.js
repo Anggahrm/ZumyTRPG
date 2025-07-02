@@ -1,4 +1,5 @@
-const { InlineKeyboard } = require("grammy");
+const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require("../middlewares/playerLoader");
 
 async function startCommand(ctx) {
@@ -15,7 +16,7 @@ async function startCommand(ctx) {
         `Level: ${player.level} | HP: ${player.hp}/${player.maxHp} | Gold: ${player.gold}\n\n` +
         `Gunakan tombol di bawah untuk berinteraksi dengan game.`;
     
-    await ctx.reply(welcomeMessage, {
+    await safeReply(ctx, welcomeMessage, {
         parse_mode: "Markdown",
         reply_markup: new InlineKeyboard()
             .text("🏹 Hunt", "quick_hunt")
@@ -25,8 +26,10 @@ async function startCommand(ctx) {
             .text("👤 Profile", "quick_profile")
             .text("🎒 Inventory", "quick_inventory").row()
             .text("🏪 Shop", "shop_main")
-            .text("📜 Quests", "quest_type_available").row()
-            .text("🏰 Guild", "refresh_guild")
+            .text("⚒️ Craft", "quick_craft").row()
+            .text("📜 Quests", "quest_type_available")
+            .text("🏰 Guild", "refresh_guild").row()
+            .text("🏆 Leaderboard", "quick_leaderboard")
             .text("❓ Help", "quick_help")
     });
 }

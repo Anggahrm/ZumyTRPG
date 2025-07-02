@@ -1,4 +1,5 @@
-const { InlineKeyboard } = require("grammy");
+const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
 const QuestService = require('../services/questService');
 const { quests } = require('../data/quests');
@@ -30,12 +31,12 @@ async function questCommand(ctx) {
         .text('🔄 Refresh', 'refresh_quests');
     
     if (ctx.callbackQuery) {
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     } else {
-        await ctx.reply(message, {
+        await safeReply(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -78,7 +79,7 @@ async function showActiveQuests(ctx, player) {
             .text('📋 Available Quests', 'quest_type_available')
             .text('🔙 Back', 'refresh_quests');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -118,7 +119,7 @@ async function showActiveQuests(ctx, player) {
     
     keyboard.row().text('🔙 Back to Quests', 'refresh_quests');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -137,7 +138,7 @@ async function showAvailableQuests(ctx, player) {
             .text('🎯 Active Quests', 'quest_type_active')
             .text('🔙 Back', 'refresh_quests');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -185,7 +186,7 @@ async function showAvailableQuests(ctx, player) {
     
     keyboard.row().text('🔙 Back to Quests', 'refresh_quests');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -235,7 +236,7 @@ async function showQuestsByType(ctx, player, questType) {
     
     keyboard.row().text('🔙 Back to Quests', 'refresh_quests');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -273,7 +274,7 @@ async function handleStartQuest(ctx, questId) {
             .text('🏹 Hunt', 'quick_hunt').row()
             .text('🔙 Back to Quests', 'refresh_quests');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -326,7 +327,7 @@ async function handleCompleteQuest(ctx, questId) {
         
         keyboard.row().text('🔙 Back to Quests', 'refresh_quests');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });

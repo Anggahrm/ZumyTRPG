@@ -1,4 +1,5 @@
-const { InlineKeyboard } = require("grammy");
+const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer, requireAlive } = require('../middlewares/playerLoader');
 const { canPerformAction, createCooldownMessage } = require('../utils/cooldown');
 const PlayerService = require('../services/playerService');
@@ -121,7 +122,7 @@ async function adventureCommand(ctx) {
                 .text("🔨 Work", "quick_work")
                 .text("👤 Profile", "quick_profile");
             
-            await ctx.api.editMessageText(
+            await safeEditMessage(ctx, 
                 ctx.chat.id,
                 adventureMessage.message_id,
                 message,
@@ -150,7 +151,7 @@ async function adventureCommand(ctx) {
                 .text('🔨 Work', 'quick_work')
                 .text('👤 Profile', 'quick_profile');
             
-            await ctx.api.editMessageText(
+            await safeEditMessage(ctx, 
                 ctx.chat.id,
                 adventureMessage.message_id,
                 message,
@@ -167,7 +168,7 @@ async function adventureCommand(ctx) {
         
     } catch (error) {
         console.error('Adventure error:', error);
-        await ctx.api.editMessageText(
+        await safeEditMessage(ctx, 
             ctx.chat.id,
             adventureMessage.message_id,
             '❌ Terjadi error saat adventure. Silakan coba lagi.'

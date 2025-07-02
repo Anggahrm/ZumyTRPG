@@ -360,7 +360,10 @@ function canCraftRecipe(player, recipeId) {
     return { canCraft: true };
 }
 
-function craftItem(player, recipeId) {
+async function craftItem(player, recipeId) {
+    const PlayerService = require('../services/playerService');
+    const QuestService = require('../services/questService');
+    
     const recipe = recipes[recipeId];
     const canCraft = canCraftRecipe(player, recipeId);
     
@@ -372,29 +375,45 @@ function craftItem(player, recipeId) {
     const success = Math.random() < recipe.successRate;
     
     // Consume materials and gold
-    player.gold -= recipe.gold;
+    await PlayerService.removeGold(player, recipe.gold);
     for (const [material, needed] of Object.entries(recipe.materials)) {
-        player.removeItem(material, needed);
+        await PlayerService.removeItem(player, material, needed);
     }
     
     if (success) {
         // Give result item
-        player.addItem(recipe.result, 1);
-        player.xp += recipe.xp;
+        await PlayerService.addItem(player, recipe.result, 1);
+        const xpResult = await PlayerService.addXp(player, recipe.xp);
         
         // Update stats
-        player.stats.itemsCrafted += 1;
+        await PlayerService.updateStats(player, { itemsCrafted: 1 });
+        
+        // Update quest progress
+        await QuestService.updateQuestProgress(player, 'craft');
+        await QuestService.updateQuestProgress(player, 'craft_items');
+        if (recipe.category === 'weapon' || recipe.category === 'armor' || recipe.category === 'accessory') {
+            await QuestService.updateQuestProgress(player, 'craft_equipment');
+        }
+        
+        // Get updated player data
+        const updatedPlayer = await PlayerService.getPlayer(player.userId);
         
         return { 
             success: true, 
             item: recipe.result, 
             xp: recipe.xp,
+            levelUps: xpResult.levelUps,
+            newGold: updatedPlayer.gold,
             message: `Successfully crafted ${recipe.result}!`
         };
     } else {
+        // Get updated player data
+        const updatedPlayer = await PlayerService.getPlayer(player.userId);
+        
         return { 
             success: false, 
             reason: 'Crafting failed!',
+            newGold: updatedPlayer.gold,
             message: 'Crafting failed! Materials were consumed.'
         };
     }

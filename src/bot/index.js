@@ -21,6 +21,8 @@ const { inventoryCommand, handleInventoryCategory, handleEquipItem, handleUseIte
 const { shopCommand, handleShopCategory, handleBuyItem } = require("../commands/shop");
 const { questCommand, handleQuestType, handleStartQuest, handleCompleteQuest } = require("../commands/quest");
 const { guildCommand, handleGuildAction, handleJoinGuild, handleLeaveGuild, handleGuildListPage } = require("../commands/guild");
+const { craftCommand, handleCraftCategory, handleCraftView, handleCraftDo } = require("../commands/craft");
+const { leaderboardCommand, handleLeaderboardCategory, handlePlayerLeaderboard, handleMyRankingMenu } = require("../commands/leaderboard");
 const helpCommand = require("../commands/help");
 
 // Create bot instance
@@ -61,6 +63,8 @@ bot.command("inventory", inventoryCommand);
 bot.command("shop", shopCommand);
 bot.command("quest", questCommand);
 bot.command("guild", guildCommand);
+bot.command("craft", craftCommand);
+bot.command("leaderboard", leaderboardCommand);
 bot.command("help", helpCommand);
 
 // Handle inline keyboard callbacks
@@ -70,6 +74,10 @@ bot.callbackQuery("quick_work", workCommand);
 bot.callbackQuery("quick_daily", dailyCommand);
 bot.callbackQuery("quick_profile", profileCommand);
 bot.callbackQuery("quick_inventory", inventoryCommand);
+bot.callbackQuery("quick_craft", craftCommand);
+bot.callbackQuery("quick_leaderboard", leaderboardCommand);
+bot.callbackQuery("quick_help", helpCommand);
+bot.callbackQuery("quick_start", startCommand);
 
 // Handle shop callbacks
 bot.callbackQuery(/^shop_buy_(.+)$/, async (ctx) => {
@@ -113,6 +121,41 @@ bot.callbackQuery(/^page_guild_list_(\d+)$/, async (ctx) => {
     await handleGuildListPage(ctx, page);
 });
 
+// Handle craft callbacks
+bot.callbackQuery(/^craft_category_(.+)$/, async (ctx) => {
+    const category = ctx.match[1];
+    await handleCraftCategory(ctx, category);
+});
+
+bot.callbackQuery(/^craft_view_(.+)$/, async (ctx) => {
+    const recipeId = ctx.match[1];
+    await handleCraftView(ctx, recipeId);
+});
+
+bot.callbackQuery(/^craft_do_(.+)$/, async (ctx) => {
+    const recipeId = ctx.match[1];
+    await handleCraftDo(ctx, recipeId);
+});
+
+// Handle leaderboard callbacks
+bot.callbackQuery("leaderboard_main", leaderboardCommand);
+
+bot.callbackQuery(/^leaderboard_(.+)$/, async (ctx) => {
+    const category = ctx.match[1];
+    if (category === 'main') {
+        await leaderboardCommand(ctx);
+    } else {
+        await handleLeaderboardCategory(ctx, category);
+    }
+});
+
+bot.callbackQuery(/^player_rank_(.+)$/, async (ctx) => {
+    const category = ctx.match[1];
+    await handlePlayerLeaderboard(ctx, category);
+});
+
+bot.callbackQuery("my_ranking_menu", handleMyRankingMenu);
+
 // Handle inventory callbacks
 bot.callbackQuery(/^inv_equip_(.+)$/, async (ctx) => {
     const itemName = ctx.match[1];
@@ -148,6 +191,12 @@ bot.callbackQuery(/^refresh_(.+)$/, async (ctx) => {
             break;
         case "shop":
             await shopCommand(ctx);
+            break;
+        case "craft":
+            await craftCommand(ctx);
+            break;
+        case "leaderboard":
+            await leaderboardCommand(ctx);
             break;
     }
 });

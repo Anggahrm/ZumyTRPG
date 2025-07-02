@@ -127,9 +127,20 @@ function errorHandler(error, ctx) {
         return;
     }
     
-    // Send generic error message to user
-    ctx.reply('❌ Terjadi error yang tidak terduga. Tim developer telah diberitahu.')
-        .catch(err => console.error('Failed to send error message:', err));
+    // Check if this is a "message not modified" error - ignore it
+    if (error.description && error.description.includes('message is not modified')) {
+        console.log('Message not modified error - ignoring');
+        return;
+    }
+    
+    // Send generic error message to user only if ctx has reply method
+    if (ctx && typeof ctx.reply === 'function') {
+        ctx.reply('❌ Terjadi error yang tidak terduga. Tim developer telah diberitahu.')
+            .catch(err => console.error('Failed to send error message:', err));
+    } else if (ctx && ctx.callbackQuery && typeof ctx.answerCallbackQuery === 'function') {
+        ctx.answerCallbackQuery('❌ Terjadi error. Silakan coba lagi.')
+            .catch(err => console.error('Failed to answer callback query:', err));
+    }
 }
 
 // Middleware to log commands

@@ -1,4 +1,5 @@
-const { InlineKeyboard } = require("grammy");
+const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
 const { canPerformAction, createCooldownMessage } = require('../utils/cooldown');
 const PlayerService = require('../services/playerService');
@@ -138,7 +139,7 @@ async function workCommand(ctx) {
             .text('⚒️ Craft', 'craft_category_all')
             .text('👤 Profile', 'quick_profile');
         
-        await ctx.api.editMessageText(
+        await safeEditMessage(ctx, 
             ctx.chat.id,
             workMessage.message_id,
             message,
@@ -154,7 +155,7 @@ async function workCommand(ctx) {
         
     } catch (error) {
         console.error('Work error:', error);
-        await ctx.api.editMessageText(
+        await safeEditMessage(ctx, 
             ctx.chat.id,
             workMessage.message_id,
             '❌ Terjadi error saat bekerja. Silakan coba lagi.'

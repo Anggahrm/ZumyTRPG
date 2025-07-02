@@ -2,6 +2,7 @@ const { InlineKeyboard } = require("grammy");
 const { requirePlayer } = require('../middlewares/playerLoader');
 const PlayerService = require('../services/playerService');
 const { getItemRarityEmoji, getProgressBar, formatNumber } = require('../utils/common');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 
 async function profileCommand(ctx) {
     const player = ctx.player;
@@ -76,12 +77,12 @@ async function profileCommand(ctx) {
         .text("🔄 Refresh", "refresh_profile");
     
     if (ctx.callbackQuery) {
-        await ctx.editMessageText(profileMessage, {
+        await safeEditMessage(ctx, profileMessage, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     } else {
-        await ctx.reply(profileMessage, {
+        await safeReply(ctx, profileMessage, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });

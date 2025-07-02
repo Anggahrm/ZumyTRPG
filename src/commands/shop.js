@@ -1,4 +1,5 @@
-const { InlineKeyboard } = require("grammy");
+const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
 const { items, getItemsByType } = require('../data/items');
 const { getItemRarityEmoji, formatNumber, chunkArray } = require('../utils/common');
@@ -27,12 +28,12 @@ async function shopCommand(ctx) {
         .text('🔄 Refresh', 'refresh_shop');
     
     if (ctx.callbackQuery) {
-        await ctx.editMessageText(shopMessage, {
+        await safeEditMessage(ctx, shopMessage, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     } else {
-        await ctx.reply(shopMessage, {
+        await safeReply(ctx, shopMessage, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -92,7 +93,7 @@ async function handleShopCategory(ctx, category) {
     
     keyboard.row().text('🔙 Back to Shop', 'shop_main');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -129,7 +130,7 @@ async function handleBuyItem(ctx, itemName) {
         .text('🎒 Inventory', 'quick_inventory').row()
         .text('🏪 Shop', 'shop_main');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });

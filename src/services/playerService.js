@@ -47,9 +47,24 @@ class PlayerService {
     
     // Add gold
     static async addGold(player, amount) {
+        // Use updateOne to avoid conflicts with other concurrent updates
+        await Player.updateOne(
+            { _id: player._id },
+            { 
+                $inc: { 
+                    gold: amount,
+                    'stats.goldEarned': amount
+                }
+            }
+        );
+        
+        // Update local player object for consistency
         player.gold += amount;
-        player.stats.goldEarned += amount;
-        return await player.save();
+        if (player.stats.goldEarned !== undefined) {
+            player.stats.goldEarned += amount;
+        }
+        
+        return player;
     }
     
     // Remove gold (returns false if insufficient)
@@ -57,15 +72,33 @@ class PlayerService {
         if (player.gold < amount) {
             return false;
         }
+        
+        // Use updateOne to avoid conflicts with other concurrent updates
+        await Player.updateOne(
+            { _id: player._id },
+            { $inc: { gold: -amount } }
+        );
+        
+        // Update local player object for consistency
         player.gold -= amount;
-        await player.save();
         return true;
     }
     
     // Add item to inventory
     static async addItem(player, itemName, quantity = 1) {
+        // Use updateOne to avoid conflicts with other concurrent updates
+        const currentQuantity = player.inventory.get(itemName) || 0;
+        const newQuantity = currentQuantity + quantity;
+        
+        await Player.updateOne(
+            { _id: player._id },
+            { $set: { [`inventory.${itemName}`]: newQuantity } }
+        );
+        
+        // Update local player object for consistency
         player.addItem(itemName, quantity);
-        return await player.save();
+        
+        return player;
     }
     
     // Remove item from inventory (returns false if insufficient)
@@ -73,8 +106,26 @@ class PlayerService {
         if (!player.hasItem(itemName, quantity)) {
             return false;
         }
+        
+        // Calculate new quantity
+        const currentQuantity = player.inventory.get(itemName) || 0;
+        const newQuantity = currentQuantity - quantity;
+        
+        // Use updateOne to avoid conflicts with other concurrent updates
+        if (newQuantity <= 0) {
+            await Player.updateOne(
+                { _id: player._id },
+                { $unset: { [`inventory.${itemName}`]: "" } }
+            );
+        } else {
+            await Player.updateOne(
+                { _id: player._id },
+                { $set: { [`inventory.${itemName}`]: newQuantity } }
+            );
+        }
+        
+        // Update local player object for consistency
         player.removeItem(itemName, quantity);
-        await player.save();
         return true;
     }
     
@@ -231,12 +282,22 @@ class PlayerService {
     
     // Update player statistics
     static async updateStats(player, statUpdates) {
+        const incUpdates = {};
+        for (const [stat, value] of Object.entries(statUpdates)) {
+            incUpdates[`stats.${stat}`] = value;
+        }
+        
+        // Use updateOne to avoid conflicts with other concurrent updates
+        await Player.updateOne({ _id: player._id }, { $inc: incUpdates });
+        
+        // Update local player object for consistency
         for (const [stat, value] of Object.entries(statUpdates)) {
             if (player.stats[stat] !== undefined) {
                 player.stats[stat] += value;
             }
         }
-        return await player.save();
+        
+        return player;
     }
     
     // Check and award achievements

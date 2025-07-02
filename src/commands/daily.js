@@ -1,4 +1,5 @@
-const { InlineKeyboard } = require("grammy");
+const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
 const { canPerformAction, createCooldownMessage } = require('../utils/cooldown');
 const PlayerService = require('../services/playerService');
@@ -33,7 +34,7 @@ async function dailyCommand(ctx) {
             .text('🔨 Work', 'quick_work')
             .text('👤 Profile', 'quick_profile');
             
-        return await ctx.reply(message, {
+        return await safeReply(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -150,7 +151,7 @@ async function dailyCommand(ctx) {
             .text('📜 Quests', 'quest_type_daily')
             .text('👤 Profile', 'quick_profile');
         
-        await ctx.api.editMessageText(
+        await safeEditMessage(ctx, 
             ctx.chat.id,
             dailyMessage.message_id,
             message,
@@ -166,7 +167,7 @@ async function dailyCommand(ctx) {
         
     } catch (error) {
         console.error('Daily error:', error);
-        await ctx.api.editMessageText(
+        await safeEditMessage(ctx, 
             ctx.chat.id,
             dailyMessage.message_id,
             '❌ Terjadi error saat mengambil daily bonus. Silakan coba lagi.'

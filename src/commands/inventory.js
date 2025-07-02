@@ -1,4 +1,5 @@
 const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
 const PlayerService = require('../services/playerService');
 const { items } = require('../data/items');
@@ -26,12 +27,12 @@ async function inventoryCommand(ctx) {
             .text('🏪 Shop', 'shop_main');
         
         if (ctx.callbackQuery) {
-            await ctx.editMessageText(message, {
+            await safeEditMessage(ctx, message, {
                 parse_mode: 'Markdown',
                 reply_markup: keyboard
             });
         } else {
-            await ctx.reply(message, {
+            await safeReply(ctx, message, {
                 parse_mode: 'Markdown',
                 reply_markup: keyboard
             });
@@ -88,12 +89,12 @@ async function inventoryCommand(ctx) {
         .text('👤 Profile', 'quick_profile');
     
     if (ctx.callbackQuery) {
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     } else {
-        await ctx.reply(message, {
+        await safeReply(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -169,7 +170,7 @@ async function handleInventoryCategory(ctx, category) {
     
     keyboard.row().text('🔙 Back to Inventory', 'quick_inventory');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -216,7 +217,7 @@ async function handleEquipItem(ctx, itemName) {
             .text('👤 Profile', 'quick_profile').row()
             .text('🏹 Hunt', 'quick_hunt');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -257,7 +258,7 @@ async function handleUseItem(ctx, itemName) {
             .text('🏹 Hunt', 'quick_hunt').row()
             .text('👤 Profile', 'quick_profile');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });

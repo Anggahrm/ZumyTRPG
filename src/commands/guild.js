@@ -1,4 +1,5 @@
-const { InlineKeyboard } = require("grammy");
+const { InlineKeyboard } = require('grammy');
+const { safeEditMessage, safeReply } = require('../utils/messageHelpers');
 const { requirePlayer } = require('../middlewares/playerLoader');
 const GuildService = require('../services/guildService');
 const { formatNumber, chunkArray } = require('../utils/common');
@@ -37,12 +38,12 @@ async function showGuildMenu(ctx, player) {
         .text('🔄 Refresh', 'refresh_guild');
     
     if (ctx.callbackQuery) {
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     } else {
-        await ctx.reply(message, {
+        await safeReply(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -96,12 +97,12 @@ async function showGuildInfo(ctx, player) {
     keyboard.text('🔄 Refresh', 'refresh_guild');
     
     if (ctx.callbackQuery) {
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     } else {
-        await ctx.reply(message, {
+        await safeReply(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -149,7 +150,7 @@ async function showGuildList(ctx, player, page = 1) {
             .text('➕ Create Guild', 'guild_action_create')
             .text('🔙 Back', 'refresh_guild');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -193,7 +194,7 @@ async function showGuildList(ctx, player, page = 1) {
         .text('➕ Create Guild', 'guild_action_create')
         .text('🔙 Back', 'refresh_guild');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -218,7 +219,7 @@ async function showCreateGuildInfo(ctx) {
     const keyboard = new InlineKeyboard()
         .text('🔙 Back to Guild Menu', 'refresh_guild');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -252,7 +253,7 @@ async function showGuildMembers(ctx, player) {
     const keyboard = new InlineKeyboard()
         .text('🔙 Back to Guild', 'refresh_guild');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -272,7 +273,7 @@ async function showContributeMenu(ctx, player) {
     const keyboard = new InlineKeyboard()
         .text('🔙 Back to Guild', 'refresh_guild');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -300,7 +301,7 @@ async function showGuildManagement(ctx, player) {
     const keyboard = new InlineKeyboard()
         .text('🔙 Back to Guild', 'refresh_guild');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -319,7 +320,7 @@ async function showLeaveConfirmation(ctx) {
         .text('✅ Yes, Leave Guild', 'confirm_guild_leave')
         .text('❌ Cancel', 'refresh_guild');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -339,7 +340,7 @@ async function showDisbandConfirmation(ctx) {
         .text('✅ Yes, Disband Guild', 'confirm_guild_disband')
         .text('❌ Cancel', 'refresh_guild');
     
-    await ctx.editMessageText(message, {
+    await safeEditMessage(ctx, message, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
@@ -363,7 +364,7 @@ async function handleJoinGuild(ctx, guildName) {
             .text('🏰 View Guild', 'refresh_guild')
             .text('👤 Profile', 'quick_profile');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
@@ -388,7 +389,7 @@ async function handleLeaveGuild(ctx) {
             .text('🔍 Browse Guilds', 'guild_action_browse')
             .text('👤 Profile', 'quick_profile');
         
-        await ctx.editMessageText(message, {
+        await safeEditMessage(ctx, message, {
             parse_mode: 'Markdown',
             reply_markup: keyboard
         });
